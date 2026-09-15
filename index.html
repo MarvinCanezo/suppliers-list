@@ -595,8 +595,7 @@ A focused home for the people and companies that keep your projects moving.</tex
               accept="image/*"
               class="form-input cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-mint file:px-3 file:py-2 file:text-xs file:font-bold" /><span
               class="mt-2 block text-xs text-ink/45"
-              >Images are resized and saved as WebP in the app's apps
-              folder.</span
+              >Images are resized and stored locally in the app.</span
             ><img
               id="supplierImagePreview"
               class="image-preview mt-3 hidden"
@@ -715,6 +714,8 @@ A focused home for the people and companies that keep your projects moving.</tex
         pin: "ledgerAdminPin",
         hero: "app_hero_config",
       };
+      const IMAGE_DB_NAME = "ledgerImageStore";
+      const IMAGE_DB_VERSION = 2;
       const HERO_DEFAULTS = {
         brand: "ledger.",
         eyebrow: "SUPPLIER DIRECTORY / WORKSPACE",
@@ -736,6 +737,8 @@ A focused home for the people and companies that keep your projects moving.</tex
         editingId = null,
         pendingAdminAction = null,
         heroConfig = loadHeroConfig();
+      let imageDbPromise;
+      const imageObjectUrls = new Map();
       const $ = (s) => document.querySelector(s),
         $$ = (s) => document.querySelectorAll(s);
       function read(key, fallback) {
@@ -751,10 +754,112 @@ A focused home for the people and companies that keep your projects moving.</tex
         }
       }
       function persist() {
-        localStorage.setItem(KEY.suppliers, JSON.stringify(suppliers));
+        const savedSuppliers = suppliers.map(({ imageDataUrl, ...supplier }) => supplier);
+        localStorage.setItem(KEY.suppliers, JSON.stringify(savedSuppliers));
+        saveSuppliersToDb(savedSuppliers).catch(() => {});
         localStorage.setItem(KEY.categories, JSON.stringify(categories));
         localStorage.setItem(KEY.pin, pin);
         localStorage.setItem(KEY.hero, JSON.stringify(heroConfig));
+      }
+      function openImageDb() {
+        if (!imageDbPromise) {
+          imageDbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(IMAGE_DB_NAME, IMAGE_DB_VERSION);
+            request.onupgradeneeded = () => {
+              const db = request.result;
+              if (!db.objectStoreNames.contains("suppliers"))
+                db.createObjectStore("suppliers", { keyPath: "id" });
+              if (!db.objectStoreNames.contains("images"))
+                db.createObjectStore("images", { keyPath: "id" });
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+        }
+        return imageDbPromise;
+      }
+      async function saveSuppliersToDb(records) {
+        const db = await openImageDb();
+        await new Promise((resolve, reject) => {
+          const transaction = db.transaction("suppliers", "readwrite");
+          const store = transaction.objectStore("suppliers");
+          store.clear();
+          records.forEach((record) => store.put(record));
+          transaction.oncomplete = resolve;
+          transaction.onerror = () => reject(transaction.error);
+        });
+      }
+      async function loadSuppliersFromDb() {
+        const db = await openImageDb();
+        return new Promise((resolve, reject) => {
+          const request = db.transaction("suppliers").objectStore("suppliers").getAll();
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+      async function storeImage(id, blob) {
+        const db = await openImageDb();
+        await new Promise((resolve, reject) => {
+          const request = db
+            .transaction("images", "readwrite")
+            .objectStore("images")
+            .put({ id, blob, mimeType: blob.type });
+          request.onsuccess = resolve;
+          request.onerror = () => reject(request.error);
+        });
+      }
+      async function readImage(id) {
+        const db = await openImageDb();
+        return new Promise((resolve, reject) => {
+          const request = db.transaction("images").objectStore("images").get(id);
+          request.onsuccess = () => resolve(request.result || null);
+          request.onerror = () => reject(request.error);
+        });
+      }
+      async function removeImage(id) {
+        if (!id) return;
+        const url = imageObjectUrls.get(id);
+        if (url) URL.revokeObjectURL(url);
+        imageObjectUrls.delete(id);
+        const db = await openImageDb();
+        await new Promise((resolve, reject) => {
+          const request = db
+            .transaction("images", "readwrite")
+            .objectStore("images")
+            .delete(id);
+          request.onsuccess = resolve;
+          request.onerror = () => reject(request.error);
+        });
+      }
+      async function loadImageUrl(supplier) {
+        if (!supplier.imageId) return "";
+        if (imageObjectUrls.has(supplier.imageId))
+          return imageObjectUrls.get(supplier.imageId);
+        const image = await readImage(supplier.imageId);
+        if (!image) return "";
+        const url = URL.createObjectURL(image.blob);
+        imageObjectUrls.set(supplier.imageId, url);
+        return url;
+      }
+      async function migrateImages() {
+        let changed = false;
+        for (const supplier of suppliers) {
+          if (!supplier.imageDataUrl || supplier.imageId) continue;
+          const blob = await (await fetch(supplier.imageDataUrl)).blob();
+          supplier.imageId = `supplier-${supplier.id}`;
+          await storeImage(supplier.imageId, blob);
+          delete supplier.imageDataUrl;
+          changed = true;
+        }
+        if (changed) persist();
+      }
+      async function hydrateImages() {
+        await migrateImages();
+        await Promise.all(
+          suppliers.map(async (supplier) => {
+            supplier.imageDataUrl = await loadImageUrl(supplier);
+          }),
+        );
       }
       function loadHeroConfig() {
         try {
@@ -847,29 +952,6 @@ A focused home for the people and companies that keep your projects moving.</tex
           };
           image.src = url;
         });
-      }
-      async function saveImageToAppsFolder(blob, supplierName, supplierId) {
-        const fileName = `${safeFileName(supplierName)}-${supplierId}.webp`;
-        if (window.showDirectoryPicker) {
-          const root = await window.showDirectoryPicker({ mode: "readwrite" });
-          const appsFolder = await root.getDirectoryHandle("apps", {
-            create: true,
-          });
-          const fileHandle = await appsFolder.getFileHandle(fileName, {
-            create: true,
-          });
-          const writable = await fileHandle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-          return `Saved ${fileName} in the apps folder.`;
-        }
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = fileName;
-        link.click();
-        URL.revokeObjectURL(url);
-        return `WebP ready as ${fileName}; choose the apps folder when saving it.`;
       }
       function showToast(message) {
         const toast = $("#toast");
@@ -1016,8 +1098,10 @@ A focused home for the people and companies that keep your projects moving.</tex
           !confirm(`Delete ${supplier.name}? This cannot be undone.`)
         )
           return;
+        const imageId = supplier.imageId;
         suppliers = suppliers.filter((s) => s.id !== id);
         persist();
+        removeImage(imageId).catch(() => {});
         renderAdmin();
         renderPublic();
         showToast("Supplier deleted.");
@@ -1199,8 +1283,18 @@ A focused home for the people and companies that keep your projects moving.</tex
         const data = Object.fromEntries(new FormData(form));
         delete data.id;
         delete data.imageFile;
-        if (image) data.imageDataUrl = image.dataUrl;
         const supplierId = editingId || Date.now();
+        const previousSupplier = editingId
+          ? suppliers.find((supplier) => supplier.id === editingId)
+          : null;
+        if (image) {
+          data.imageId = previousSupplier?.imageId || `supplier-${supplierId}`;
+          await storeImage(data.imageId, image.blob);
+          data.imageDataUrl = image.dataUrl;
+        } else if (previousSupplier?.imageId) {
+          data.imageId = previousSupplier.imageId;
+          data.imageDataUrl = previousSupplier.imageDataUrl;
+        }
         if (editingId) {
           suppliers = suppliers.map((s) =>
             s.id === editingId ? { ...s, ...data, id: supplierId } : s,
@@ -1211,20 +1305,7 @@ A focused home for the people and companies that keep your projects moving.</tex
           showToast("Supplier added successfully.");
         }
         persist();
-        if (image) {
-          try {
-            const message = await saveImageToAppsFolder(
-              image.blob,
-              data.name,
-              supplierId,
-            );
-            showToast(message);
-          } catch {
-            showToast(
-              "Supplier saved, but the image was not written to the apps folder.",
-            );
-          }
-        }
+        if (image) showToast("Supplier saved with image.");
         form.reset();
         $("#supplierImagePreview").src = "";
         $("#supplierImagePreview").classList.add("hidden");
@@ -1280,6 +1361,7 @@ A focused home for the people and companies that keep your projects moving.</tex
             data.hero && typeof data.hero === "object"
               ? { ...HERO_DEFAULTS, ...data.hero }
               : { ...HERO_DEFAULTS };
+          await migrateImages();
           persist();
           activeCategory = "All";
           renderTabs();
@@ -1292,9 +1374,28 @@ A focused home for the people and companies that keep your projects moving.</tex
         }
         e.target.value = "";
       };
-      applyHero();
-      renderTabs();
-      renderPublic();
+      async function initializeApp() {
+        applyHero();
+        renderTabs();
+        renderPublic();
+        try {
+          const storedSuppliers = await loadSuppliersFromDb();
+          if (storedSuppliers.length) {
+            suppliers = storedSuppliers;
+          } else {
+            await migrateImages();
+            await saveSuppliersToDb(
+              suppliers.map(({ imageDataUrl, ...supplier }) => supplier),
+            );
+          }
+          await hydrateImages();
+          renderPublic();
+          renderAdmin();
+        } catch {
+          showToast("Images could not be loaded from local storage.");
+        }
+      }
+      initializeApp();
       if (window.location.hash.toLowerCase() === "#admin") openAdminSettings();
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
