@@ -126,20 +126,7 @@
     <header id="heroBanner" class="relative overflow-hidden bg-ink text-white">
       <div id="heroGrid" class="hero-grid absolute inset-0 opacity-70"></div>
       <div class="relative mx-auto max-w-7xl px-5 pb-10 pt-6 sm:px-8 sm:pb-14">
-        <nav class="flex items-center justify-between">
-          <a
-            id="brandName"
-            href="#"
-            class="font-display text-xl font-bold tracking-tight"
-            >ledger.</a
-          ><button
-            id="adminBtn"
-            class="inline-flex items-center gap-2 rounded-lg border border-mint/20 px-3 py-2 text-xs font-bold text-mint/80 transition hover:border-signal hover:text-white"
-            aria-label="Open admin settings"
-          >
-            <span>⚙</span> Admin / Settings
-          </button>
-        </nav>
+        <nav class="min-h-8" aria-hidden="true"></nav>
         <div class="mt-14 max-w-3xl sm:mt-20">
           <p
             class="mb-4 text-xs font-bold uppercase tracking-[.24em] text-signal"
@@ -771,7 +758,6 @@ A focused home for the people and companies that keep your projects moving.</tex
         }
       }
       function applyHero() {
-        $("#brandName").textContent = heroConfig.brand;
         $("#heroEyebrow").textContent = heroConfig.eyebrow;
         $("#heroTitle").textContent = heroConfig.title;
         $("#heroSubtitle").textContent = heroConfig.subtitle;
@@ -1114,11 +1100,12 @@ A focused home for the people and companies that keep your projects moving.</tex
       $("#clearBtn").onclick = resetFilters;
       $("#resetBtn").onclick = resetFilters;
       $("#addSupplierBtn").onclick = () => openSupplierEditor();
-      $("#adminBtn").onclick = () =>
+      function openAdminSettings() {
         requestAdmin(() => {
           renderAdmin();
           openModal("#adminModal");
         });
+      }
       $("#heroForm").oninput = (e) => {
         if (!e.target.name) return;
         heroConfig[e.target.name] = e.target.value;
@@ -1153,6 +1140,11 @@ A focused home for the people and companies that keep your projects moving.</tex
           }),
       );
       document.onkeydown = (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
+          e.preventDefault();
+          openAdminSettings();
+          return;
+        }
         if (e.key === "Escape")
           $$('[id$="Modal"]:not(.hidden)').forEach(closeModal);
       };
@@ -1294,6 +1286,7 @@ A focused home for the people and companies that keep your projects moving.</tex
       applyHero();
       renderTabs();
       renderPublic();
+      if (window.location.hash.toLowerCase() === "#admin") openAdminSettings();
     </script>
   </body>
 </html>
