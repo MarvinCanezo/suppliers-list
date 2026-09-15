@@ -1,0 +1,1299 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ledger | Supplier Directory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["DM Sans", "ui-sans-serif", "system-ui"],
+              display: ["Space Grotesk", "ui-sans-serif", "system-ui"],
+            },
+            colors: {
+              ink: "#17221f",
+              mint: "#dcefe8",
+              signal: "#f2b84b",
+              paper: "#f7f8f5",
+            },
+            boxShadow: {
+              soft: "0 16px 40px rgba(23,34,31,.08)",
+              lift: "0 24px 54px rgba(23,34,31,.16)",
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background: #f7f8f5;
+        color: #17221f;
+      }
+      .hero-grid {
+        background-image:
+          linear-gradient(rgba(220, 239, 232, 0.12) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(220, 239, 232, 0.12) 1px, transparent 1px);
+        background-size: 32px 32px;
+      }
+      .hero-solid #heroGrid {
+        background-image: none;
+      }
+      .hero-radial #heroGrid {
+        background-image:
+          radial-gradient(
+            circle at 80% 20%,
+            rgba(242, 184, 75, 0.2),
+            transparent 38%
+          ),
+          radial-gradient(
+            circle at 15% 85%,
+            rgba(220, 239, 232, 0.16),
+            transparent 35%
+          );
+      }
+      .backdrop {
+        background: rgba(12, 20, 18, 0.68);
+        backdrop-filter: blur(7px);
+      }
+      .modal-open {
+        overflow: hidden;
+      }
+      .form-input {
+        width: 100%;
+        border: 1px solid rgba(23, 34, 31, 0.15);
+        border-radius: 0.6rem;
+        background: #fff;
+        padding: 0.75rem 0.85rem;
+        font-size: 0.875rem;
+        outline: none;
+        color: #17221f;
+      }
+      .form-input:focus {
+        border-color: #f2b84b;
+        box-shadow: 0 0 0 3px rgba(242, 184, 75, 0.24);
+      }
+      .image-preview {
+        max-height: 10rem;
+        width: 100%;
+        object-fit: cover;
+        border-radius: 0.6rem;
+      }
+      .supplier-card {
+        animation: rise 0.3s ease both;
+      }
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .pin-shake {
+        animation: shake 0.35s ease;
+      }
+      @keyframes shake {
+        25%,
+        75% {
+          transform: translateX(-6px);
+        }
+        50% {
+          transform: translateX(6px);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *:before,
+        *:after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="font-sans antialiased">
+    <header id="heroBanner" class="relative overflow-hidden bg-ink text-white">
+      <div id="heroGrid" class="hero-grid absolute inset-0 opacity-70"></div>
+      <div class="relative mx-auto max-w-7xl px-5 pb-10 pt-6 sm:px-8 sm:pb-14">
+        <nav class="flex items-center justify-between">
+          <a
+            id="brandName"
+            href="#"
+            class="font-display text-xl font-bold tracking-tight"
+            >ledger.</a
+          ><button
+            id="adminBtn"
+            class="inline-flex items-center gap-2 rounded-lg border border-mint/20 px-3 py-2 text-xs font-bold text-mint/80 transition hover:border-signal hover:text-white"
+            aria-label="Open admin settings"
+          >
+            <span>⚙</span> Admin / Settings
+          </button>
+        </nav>
+        <div class="mt-14 max-w-3xl sm:mt-20">
+          <p
+            class="mb-4 text-xs font-bold uppercase tracking-[.24em] text-signal"
+          >
+            <span id="heroEyebrow">Supplier directory / workspace</span>
+          </p>
+          <h1
+            class="font-display text-4xl font-bold leading-[1.02] tracking-tight sm:text-6xl"
+          >
+            <span id="heroTitle">The right partners, within reach.</span>
+          </h1>
+          <p
+            class="mt-6 max-w-xl text-base leading-relaxed text-mint/75 sm:text-lg"
+          >
+            <span id="heroSubtitle"
+              >A focused home for the people and companies that keep your
+              projects moving.</span
+            >
+          </p>
+        </div>
+        <div class="mt-10 flex max-w-4xl flex-col gap-3 sm:flex-row">
+          <label class="relative block flex-1"
+            ><span class="sr-only">Search suppliers</span
+            ><svg
+              class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink/50"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m20 20-4-4"></path></svg
+            ><input
+              id="searchInput"
+              type="search"
+              placeholder="Search companies, people, products, places..."
+              class="h-14 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm text-ink shadow-soft outline-none focus:ring-2 focus:ring-signal" /></label
+          ><button
+            id="addSupplierBtn"
+            class="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-signal px-6 text-sm font-bold text-ink transition hover:bg-white"
+          >
+            <span class="text-xl">+</span> Add supplier
+          </button>
+        </div>
+      </div>
+    </header>
+    <main class="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
+      <section
+        class="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end"
+      >
+        <div>
+          <p
+            class="mb-2 text-xs font-bold uppercase tracking-[.2em] text-ink/45"
+          >
+            Your network
+          </p>
+          <div class="flex items-baseline gap-3">
+            <h2 class="font-display text-3xl font-bold tracking-tight">
+              Suppliers
+            </h2>
+            <span
+              id="resultCount"
+              class="rounded-full bg-mint px-2.5 py-1 text-xs font-bold"
+              >0 found</span
+            >
+          </div>
+        </div>
+        <button
+          id="clearBtn"
+          class="hidden self-start text-sm font-bold text-ink/60 underline decoration-signal decoration-2 underline-offset-4"
+        >
+          Clear all filters
+        </button>
+      </section>
+      <div
+        id="categoryTabs"
+        class="mb-8 flex gap-2 overflow-x-auto border-b border-ink/10 pb-3"
+        role="tablist"
+        aria-label="Supplier categories"
+      ></div>
+      <div
+        id="supplierGrid"
+        class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+      ></div>
+      <div
+        id="emptyState"
+        class="hidden rounded-2xl border border-dashed border-ink/20 bg-white px-6 py-16 text-center shadow-soft"
+      >
+        <div
+          class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-mint text-2xl"
+        >
+          ⌕
+        </div>
+        <h3 class="font-display text-xl font-bold">No suppliers found</h3>
+        <p class="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink/55">
+          Try a different search term or clear your filters to see the full
+          directory.
+        </p>
+        <button
+          id="resetBtn"
+          class="mt-6 rounded-lg bg-ink px-4 py-2.5 text-sm font-bold text-white"
+        >
+          Reset filters
+        </button>
+      </div>
+    </main>
+
+    <div
+      id="pinModal"
+      class="backdrop fixed inset-0 z-50 hidden items-center justify-center p-4"
+      aria-hidden="true"
+    >
+      <div
+        class="w-full max-w-sm rounded-2xl bg-paper p-6 shadow-lift"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pinTitle"
+      >
+        <div class="mb-6 flex items-start justify-between">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[.2em] text-ink/45">
+              Restricted area
+            </p>
+            <h2 id="pinTitle" class="mt-1 font-display text-2xl font-bold">
+              Admin access
+            </h2>
+          </div>
+          <button class="close-modal text-2xl text-ink/40" aria-label="Close">
+            &times;
+          </button>
+        </div>
+        <p class="mb-4 text-sm text-ink/60">
+          Enter your 4-digit security PIN to continue.
+        </p>
+        <form id="pinForm">
+          <input
+            id="pinInput"
+            type="password"
+            inputmode="numeric"
+            maxlength="4"
+            pattern="[0-9]{4}"
+            required
+            autocomplete="off"
+            class="form-input text-center text-2xl tracking-[.7em]"
+            placeholder="••••"
+          />
+          <p
+            id="pinError"
+            class="mt-2 hidden text-center text-xs font-bold text-red-600"
+          >
+            Incorrect PIN. Try again.
+          </p>
+          <button
+            class="mt-5 w-full rounded-lg bg-ink py-3 text-sm font-bold text-white"
+          >
+            Unlock settings
+          </button>
+        </form>
+        <p class="mt-4 text-center text-xs text-ink/40">Default PIN: 1234</p>
+      </div>
+    </div>
+
+    <div
+      id="adminModal"
+      class="backdrop fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto p-4 sm:p-8"
+      aria-hidden="true"
+    >
+      <div
+        class="w-full max-w-6xl rounded-2xl bg-paper shadow-lift"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="adminTitle"
+      >
+        <div
+          class="flex flex-wrap items-center justify-between gap-4 border-b border-ink/10 px-5 py-5 sm:px-8"
+        >
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[.2em] text-ink/45">
+              Private workspace
+            </p>
+            <h2 id="adminTitle" class="mt-1 font-display text-2xl font-bold">
+              Admin settings
+            </h2>
+          </div>
+          <button
+            class="close-modal flex h-9 w-9 items-center justify-center rounded-full text-2xl text-ink/45 hover:bg-ink/10"
+            aria-label="Close"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="grid gap-8 p-5 sm:p-8 lg:grid-cols-[1.15fr_.85fr]">
+          <section>
+            <div class="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <h3 class="font-display text-xl font-bold">
+                  Supplier management
+                </h3>
+                <p class="mt-1 text-sm text-ink/55">
+                  Edit records or remove outdated partners.
+                </p>
+              </div>
+              <button
+                id="adminAddBtn"
+                class="rounded-lg bg-signal px-4 py-2.5 text-xs font-bold"
+              >
+                + New supplier
+              </button>
+            </div>
+            <div id="adminSupplierList" class="space-y-3"></div>
+          </section>
+          <aside class="space-y-5">
+            <section class="rounded-xl border border-ink/10 bg-white p-5">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h3 class="font-display text-lg font-bold">
+                    Hero Section Settings
+                  </h3>
+                  <p class="mt-1 text-sm text-ink/55">
+                    Customize the public banner. Changes preview instantly.
+                  </p>
+                </div>
+                <span
+                  class="rounded-full bg-mint px-2 py-1 text-[10px] font-bold uppercase tracking-wide"
+                  >Live</span
+                >
+              </div>
+              <form id="heroForm" class="mt-4 space-y-3">
+                <label
+                  ><span class="field-label">Logo / brand name</span
+                  ><input
+                    name="brand"
+                    required
+                    class="form-input"
+                    value="ledger."
+                /></label>
+                <label
+                  ><span class="field-label">Eyebrow / overline</span
+                  ><input
+                    name="eyebrow"
+                    required
+                    class="form-input"
+                    value="SUPPLIER DIRECTORY / WORKSPACE"
+                /></label>
+                <label
+                  ><span class="field-label">Hero title</span
+                  ><textarea
+                    name="title"
+                    required
+                    rows="2"
+                    class="form-input resize-none"
+                  >
+The right partners, within reach.</textarea
+                  >
+                </label>
+                <label
+                  ><span class="field-label">Hero subheadline</span
+                  ><textarea
+                    name="subtitle"
+                    required
+                    rows="3"
+                    class="form-input resize-none"
+                  >
+A focused home for the people and companies that keep your projects moving.</textarea
+                  >
+                </label>
+                <label
+                  ><span class="field-label">Background style</span
+                  ><select name="background" class="form-input">
+                    <option value="grid">Dark Blueprint Grid</option>
+                    <option value="solid">Solid Minimal Slate</option>
+                    <option value="radial">Subtle Radial Gradient</option>
+                  </select></label
+                >
+                <div class="flex flex-col gap-2 pt-2 sm:flex-row">
+                  <button
+                    type="submit"
+                    class="flex-1 rounded-lg bg-ink py-2.5 text-sm font-bold text-white hover:bg-ink/80"
+                  >
+                    Save Hero Settings</button
+                  ><button
+                    type="button"
+                    id="resetHeroBtn"
+                    class="rounded-lg border border-ink/15 px-4 py-2.5 text-sm font-bold hover:bg-ink/5"
+                  >
+                    Reset to Default
+                  </button>
+                </div>
+              </form>
+            </section>
+            <section class="rounded-xl border border-ink/10 bg-white p-5">
+              <h3 class="font-display text-lg font-bold">Categories</h3>
+              <p class="mt-1 text-sm text-ink/55">
+                These appear in public filters and supplier forms.
+              </p>
+              <form id="categoryForm" class="mt-4 flex gap-2">
+                <input
+                  id="categoryInput"
+                  required
+                  class="form-input"
+                  placeholder="New category"
+                /><button
+                  class="rounded-lg bg-ink px-4 text-sm font-bold text-white"
+                >
+                  Add
+                </button>
+              </form>
+              <div id="categoryList" class="mt-4 space-y-2"></div>
+            </section>
+            <section class="rounded-xl border border-ink/10 bg-white p-5">
+              <h3 class="font-display text-lg font-bold">Security</h3>
+              <p class="mt-1 text-sm text-ink/55">
+                Change the PIN required for this panel.
+              </p>
+              <form id="changePinForm" class="mt-4 space-y-3">
+                <input
+                  name="currentPin"
+                  type="password"
+                  inputmode="numeric"
+                  maxlength="4"
+                  required
+                  class="form-input"
+                  placeholder="Current PIN"
+                /><input
+                  name="newPin"
+                  type="password"
+                  inputmode="numeric"
+                  maxlength="4"
+                  pattern="[0-9]{4}"
+                  required
+                  class="form-input"
+                  placeholder="New 4-digit PIN"
+                /><button
+                  class="w-full rounded-lg border border-ink/15 py-2.5 text-sm font-bold hover:bg-ink hover:text-white"
+                >
+                  Update PIN
+                </button>
+              </form>
+            </section>
+            <section class="rounded-xl border border-ink/10 bg-white p-5">
+              <h3 class="font-display text-lg font-bold">Data & backup</h3>
+              <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                <button
+                  id="exportBtn"
+                  class="rounded-lg border border-ink/15 py-2.5 text-sm font-bold hover:bg-ink hover:text-white"
+                >
+                  ↓ Export Data as JSON</button
+                ><button
+                  id="importBtn"
+                  class="rounded-lg border border-ink/15 py-2.5 text-sm font-bold hover:bg-ink hover:text-white"
+                >
+                  ↑ Import JSON</button
+                ><button
+                  id="resetDemoBtn"
+                  class="rounded-lg border border-red-200 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50"
+                >
+                  Reset to Demo Data</button
+                ><input
+                  id="importFile"
+                  type="file"
+                  accept="application/json"
+                  class="hidden"
+                />
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="supplierModal"
+      class="backdrop fixed inset-0 z-[55] hidden items-center justify-center overflow-y-auto p-4"
+      aria-hidden="true"
+    >
+      <div
+        class="w-full max-w-2xl rounded-2xl bg-paper shadow-lift"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="supplierModalTitle"
+      >
+        <div
+          class="flex items-start justify-between border-b border-ink/10 px-6 py-5 sm:px-8"
+        >
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[.2em] text-ink/45">
+              Admin record
+            </p>
+            <h2
+              id="supplierModalTitle"
+              class="mt-1 font-display text-2xl font-bold"
+            >
+              Add supplier
+            </h2>
+          </div>
+          <button class="close-modal text-2xl text-ink/40" aria-label="Close">
+            &times;
+          </button>
+        </div>
+        <form
+          id="supplierForm"
+          class="grid gap-5 px-6 py-6 sm:grid-cols-2 sm:px-8"
+        >
+          <input name="id" type="hidden" /><label class="sm:col-span-2"
+            ><span class="field-label">Company name *</span
+            ><input
+              name="name"
+              required
+              class="form-input"
+              placeholder="Northline Timber" /></label
+          ><label
+            ><span class="field-label">Category *</span
+            ><select
+              name="category"
+              required
+              class="form-input"
+            ></select></label
+          ><label
+            ><span class="field-label">Contact person *</span
+            ><input
+              name="contact"
+              required
+              class="form-input"
+              placeholder="Maya Chen" /></label
+          ><label
+            ><span class="field-label">Phone</span
+            ><input
+              name="phone"
+              type="tel"
+              class="form-input"
+              placeholder="+1 555 000 0000" /></label
+          ><label
+            ><span class="field-label">Email</span
+            ><input
+              name="email"
+              type="email"
+              class="form-input"
+              placeholder="hello@company.com" /></label
+          ><label class="sm:col-span-2"
+            ><span class="field-label">Location / address</span
+            ><input
+              name="address"
+              class="form-input"
+              placeholder="Street, city, country" /></label
+          ><label class="sm:col-span-2"
+            ><span class="field-label">Products / specialization *</span
+            ><input
+              name="products"
+              required
+              class="form-input"
+              placeholder="Structural steel, fasteners" /></label
+          ><label class="sm:col-span-2"
+            ><span class="field-label">Supplier image</span
+            ><input
+              name="imageFile"
+              type="file"
+              accept="image/*"
+              class="form-input cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-mint file:px-3 file:py-2 file:text-xs file:font-bold" /><span
+              class="mt-2 block text-xs text-ink/45"
+              >Images are resized and saved as WebP in the app's apps
+              folder.</span
+            ><img
+              id="supplierImagePreview"
+              class="image-preview mt-3 hidden"
+              alt="Supplier image preview" /></label
+          ><label class="sm:col-span-2"
+            ><span class="field-label">Notes / price range</span
+            ><textarea
+              name="notes"
+              rows="3"
+              class="form-input resize-none"
+              placeholder="Lead times, pricing, or useful context"
+            ></textarea>
+          </label>
+          <div
+            class="flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:col-span-2 sm:flex-row sm:justify-end"
+          >
+            <button
+              type="button"
+              class="close-modal rounded-lg px-5 py-3 text-sm font-bold text-ink/60 hover:bg-ink/10"
+            >
+              Cancel</button
+            ><button
+              class="rounded-lg bg-ink px-6 py-3 text-sm font-bold text-white"
+            >
+              Save supplier
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div
+      id="toast"
+      class="fixed bottom-5 left-1/2 z-[70] hidden max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-lg bg-ink px-5 py-3 text-center text-sm font-bold text-white shadow-lift"
+    ></div>
+
+    <script>
+      const DEMO_CATEGORIES = [
+        "Construction",
+        "Electrical",
+        "Plumbing",
+        "Finishes",
+        "Hardware",
+        "Logistics",
+      ];
+      const DEMO_SUPPLIERS = [
+        {
+          id: 1,
+          name: "Atlas Build Co.",
+          category: "Construction",
+          products: "Structural steel, concrete, aggregates",
+          contact: "Jordan Bell",
+          phone: "+1 404 555 0182",
+          email: "jordan@atlasbuild.co",
+          address: "Atlanta, GA",
+          notes: "Reliable volume partner for commercial builds.",
+        },
+        {
+          id: 2,
+          name: "Lumen House",
+          category: "Electrical",
+          products: "LED systems, switches, smart controls",
+          contact: "Owen Wright",
+          phone: "+1 206 555 0127",
+          email: "owen@lumenhouse.io",
+          address: "Seattle, WA",
+          notes: "Specialist in energy-efficient fit-outs.",
+        },
+        {
+          id: 3,
+          name: "ClearFlow Supply",
+          category: "Plumbing",
+          products: "Pipes, valves, bathroom fittings",
+          contact: "Nadia Evans",
+          phone: "+1 305 555 0164",
+          email: "nadia@clearflow.com",
+          address: "Miami, FL",
+          notes: "Same-week delivery across the metro area.",
+        },
+        {
+          id: 4,
+          name: "Forma Studio",
+          category: "Finishes",
+          products: "Joinery, cabinetry, bespoke furniture",
+          contact: "Elena Rossi",
+          phone: "+1 718 555 0198",
+          email: "elena@formastudio.design",
+          address: "Brooklyn, NY",
+          notes: "Made-to-order production with sample service.",
+        },
+        {
+          id: 5,
+          name: "Bolt & Beam",
+          category: "Hardware",
+          products: "Fasteners, hand tools, fixings",
+          contact: "Maya Chen",
+          phone: "+1 312 555 0144",
+          email: "maya@boltandbeam.com",
+          address: "Chicago, IL",
+          notes: "Next-day dispatch available on stocked items.",
+        },
+        {
+          id: 6,
+          name: "Parcel North",
+          category: "Logistics",
+          products: "Pallets, protective wrap, freight",
+          contact: "Sam Okafor",
+          phone: "+1 214 555 0116",
+          email: "sam@parcelnorth.com",
+          address: "Dallas, TX",
+          notes: "Regional delivery network and export packaging.",
+        },
+      ];
+      const KEY = {
+        suppliers: "ledgerSuppliers",
+        categories: "ledgerCategories",
+        pin: "ledgerAdminPin",
+        hero: "app_hero_config",
+      };
+      const HERO_DEFAULTS = {
+        brand: "ledger.",
+        eyebrow: "SUPPLIER DIRECTORY / WORKSPACE",
+        title: "The right partners, within reach.",
+        subtitle:
+          "A focused home for the people and companies that keep your projects moving.",
+        background: "grid",
+      };
+      let suppliers = read(KEY.suppliers, DEMO_SUPPLIERS),
+        categories = read(KEY.categories, DEMO_CATEGORIES)
+          .map((category) =>
+            typeof category === "string"
+              ? category
+              : category?.name || category?.label || "",
+          )
+          .filter(Boolean),
+        pin = localStorage.getItem(KEY.pin) || "1234",
+        activeCategory = "All",
+        editingId = null,
+        pendingAdminAction = null,
+        heroConfig = loadHeroConfig();
+      const $ = (s) => document.querySelector(s),
+        $$ = (s) => document.querySelectorAll(s);
+      function read(key, fallback) {
+        const copy = () =>
+          fallback.map((item) =>
+            item && typeof item === "object" ? { ...item } : item,
+          );
+        try {
+          const value = JSON.parse(localStorage.getItem(key));
+          return Array.isArray(value) && value.length ? value : copy();
+        } catch {
+          return copy();
+        }
+      }
+      function persist() {
+        localStorage.setItem(KEY.suppliers, JSON.stringify(suppliers));
+        localStorage.setItem(KEY.categories, JSON.stringify(categories));
+        localStorage.setItem(KEY.pin, pin);
+        localStorage.setItem(KEY.hero, JSON.stringify(heroConfig));
+      }
+      function loadHeroConfig() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(KEY.hero));
+          return saved && typeof saved === "object"
+            ? { ...HERO_DEFAULTS, ...saved }
+            : { ...HERO_DEFAULTS };
+        } catch {
+          return { ...HERO_DEFAULTS };
+        }
+      }
+      function applyHero() {
+        $("#brandName").textContent = heroConfig.brand;
+        $("#heroEyebrow").textContent = heroConfig.eyebrow;
+        $("#heroTitle").textContent = heroConfig.title;
+        $("#heroSubtitle").textContent = heroConfig.subtitle;
+        $("#heroBanner").classList.remove("hero-solid", "hero-radial");
+        if (heroConfig.background === "solid")
+          $("#heroBanner").classList.add("hero-solid");
+        if (heroConfig.background === "radial")
+          $("#heroBanner").classList.add("hero-radial");
+      }
+      function renderHeroForm() {
+        const form = $("#heroForm");
+        Object.entries(heroConfig).forEach(([key, value]) => {
+          if (form.elements[key]) form.elements[key].value = value;
+        });
+      }
+      function esc(value = "") {
+        return String(value).replace(
+          /[&<>'"]/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              "'": "&#39;",
+              '"': "&quot;",
+            })[c],
+        );
+      }
+      function initials(name) {
+        return name
+          .split(/\s+/)
+          .map((word) => word[0])
+          .slice(0, 2)
+          .join("")
+          .toUpperCase();
+      }
+      function safeFileName(value) {
+        return (
+          String(value)
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "") || "supplier"
+        );
+      }
+      function resizeImage(file) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          const url = URL.createObjectURL(file);
+          image.onload = () => {
+            const maxSize = 800;
+            const scale = Math.min(
+              1,
+              maxSize / Math.max(image.width, image.height),
+            );
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(image.width * scale));
+            canvas.height = Math.max(1, Math.round(image.height * scale));
+            canvas
+              .getContext("2d")
+              .drawImage(image, 0, 0, canvas.width, canvas.height);
+            URL.revokeObjectURL(url);
+            canvas.toBlob(
+              (blob) => {
+                if (!blob) return reject(new Error("Image conversion failed"));
+                const reader = new FileReader();
+                reader.onload = () => resolve({ blob, dataUrl: reader.result });
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              },
+              "image/webp",
+              0.82,
+            );
+          };
+          image.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("Invalid image"));
+          };
+          image.src = url;
+        });
+      }
+      async function saveImageToAppsFolder(blob, supplierName, supplierId) {
+        const fileName = `${safeFileName(supplierName)}-${supplierId}.webp`;
+        if (window.showDirectoryPicker) {
+          const root = await window.showDirectoryPicker({ mode: "readwrite" });
+          const appsFolder = await root.getDirectoryHandle("apps", {
+            create: true,
+          });
+          const fileHandle = await appsFolder.getFileHandle(fileName, {
+            create: true,
+          });
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          return `Saved ${fileName} in the apps folder.`;
+        }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        link.click();
+        URL.revokeObjectURL(url);
+        return `WebP ready as ${fileName}; choose the apps folder when saving it.`;
+      }
+      function showToast(message) {
+        const toast = $("#toast");
+        toast.textContent = message;
+        toast.classList.remove("hidden");
+        clearTimeout(window.toastTimer);
+        window.toastTimer = setTimeout(
+          () => toast.classList.add("hidden"),
+          3200,
+        );
+      }
+      function openModal(id) {
+        $(id).classList.replace("hidden", "flex");
+        $(id).setAttribute("aria-hidden", "false");
+        document.body.classList.add("modal-open");
+      }
+      function closeModal(modal) {
+        modal.classList.replace("flex", "hidden");
+        modal.setAttribute("aria-hidden", "true");
+        if (!$$('[id$="Modal"]:not(.hidden)').length)
+          document.body.classList.remove("modal-open");
+      }
+      function renderTabs() {
+        const tabs = ["All", ...categories];
+        $("#categoryTabs").innerHTML = tabs
+          .map(
+            (category) =>
+              `<button role="tab" aria-selected="${activeCategory === category}" data-category="${esc(category)}" class="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-bold transition ${activeCategory === category ? "bg-ink text-white" : "text-ink/55 hover:bg-ink/5 hover:text-ink"}">${esc(category)}</button>`,
+          )
+          .join("");
+        $$("[data-category]").forEach(
+          (button) =>
+            (button.onclick = () => {
+              activeCategory = button.dataset.category;
+              renderTabs();
+              renderPublic();
+            }),
+        );
+      }
+      function renderPublic() {
+        const query = $("#searchInput").value.trim().toLowerCase(),
+          results = suppliers.filter((s) => {
+            const matchesCategory =
+              activeCategory === "All" || s.category === activeCategory;
+            const haystack = [
+              s.name,
+              s.products,
+              s.contact,
+              s.address,
+              s.category,
+            ]
+              .join(" ")
+              .toLowerCase();
+            return matchesCategory && haystack.includes(query);
+          });
+        (($("#resultCount").textContent = `${results.length} found`),
+          $("#clearBtn").classList.toggle(
+            "hidden",
+            !query && activeCategory === "All",
+          ),
+          $("#emptyState").classList.toggle("hidden", results.length > 0));
+        $("#supplierGrid").innerHTML = results
+          .map(
+            (s, i) =>
+              `<article class="supplier-card group flex flex-col rounded-2xl border border-ink/10 bg-white p-5 shadow-soft transition hover:-translate-y-1 hover:shadow-lift" style="animation-delay:${i * 40}ms"><div class="flex items-start gap-3">${s.imageDataUrl ? `<img src="${esc(s.imageDataUrl)}" alt="${esc(s.name)}" class="h-11 w-11 shrink-0 rounded-xl object-cover" />` : `<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ink font-display text-sm font-bold text-signal">${esc(initials(s.name))}</div>`}<div class="min-w-0"><h3 class="truncate font-display text-lg font-bold">${esc(s.name)}</h3><span class="mt-1 inline-block rounded-full bg-mint px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-ink">${esc(s.category)}</span></div></div><div class="mt-5 flex min-h-[34px] flex-wrap gap-1.5">${s.products
+                .split(",")
+                .map(
+                  (tag) =>
+                    `<span class="rounded-md bg-ink/5 px-2 py-1 text-xs font-semibold text-ink/65">${esc(tag.trim())}</span>`,
+                )
+                .join(
+                  "",
+                )}</div><div class="my-5 h-px bg-ink/10"></div><dl class="space-y-3 text-sm"><div class="flex gap-3"><dt class="w-16 shrink-0 text-ink/40">Contact</dt><dd class="font-semibold">${esc(s.contact)}</dd></div><div class="flex gap-3"><dt class="w-16 shrink-0 text-ink/40">Phone</dt><dd class="truncate font-semibold">${esc(s.phone || "Not provided")}</dd></div><div class="flex gap-3"><dt class="w-16 shrink-0 text-ink/40">Email</dt><dd class="truncate font-semibold">${esc(s.email || "Not provided")}</dd></div><div class="flex gap-3"><dt class="w-16 shrink-0 text-ink/40">Location</dt><dd class="font-semibold">${esc(s.address || "Not provided")}</dd></div></dl><div class="mt-6 flex gap-2"><a href="tel:${esc(s.phone || "")}" class="flex-1 rounded-lg border border-ink/15 py-2.5 text-center text-xs font-bold transition hover:bg-ink hover:text-white">Call</a><a href="mailto:${esc(s.email || "")}" class="flex-1 rounded-lg border border-ink/15 py-2.5 text-center text-xs font-bold transition hover:bg-ink hover:text-white">Email</a></div></article>`,
+          )
+          .join("");
+      }
+      function fillCategorySelect(selected = "") {
+        const select = $('#supplierForm [name="category"]');
+        select.innerHTML = categories
+          .map(
+            (c) =>
+              `<option value="${esc(c)}" ${c === selected ? "selected" : ""}>${esc(c)}</option>`,
+          )
+          .join("");
+      }
+      function renderAdmin() {
+        fillCategorySelect();
+        renderHeroForm();
+        $("#adminSupplierList").innerHTML = suppliers.length
+          ? suppliers
+              .map(
+                (s) =>
+                  `<div class="flex items-center justify-between gap-3 rounded-xl border border-ink/10 bg-white p-3"><div class="flex min-w-0 items-center gap-3">${s.imageDataUrl ? `<img src="${esc(s.imageDataUrl)}" alt="" class="h-9 w-9 shrink-0 rounded-lg object-cover" />` : ""}<div class="min-w-0"><p class="truncate text-sm font-bold">${esc(s.name)}</p><p class="truncate text-xs text-ink/50">${esc(s.category)} · ${esc(s.contact)}</p></div></div><div class="flex shrink-0 gap-1"><button data-edit="${s.id}" class="rounded-md px-2.5 py-2 text-xs font-bold hover:bg-mint">Edit</button><button data-delete="${s.id}" class="rounded-md px-2.5 py-2 text-xs font-bold text-red-600 hover:bg-red-50">Delete</button></div></div>`,
+              )
+              .join("")
+          : '<p class="rounded-xl border border-dashed border-ink/20 p-5 text-center text-sm text-ink/50">No suppliers yet.</p>';
+        $$("[data-edit]").forEach(
+          (b) => (b.onclick = () => openSupplierEditor(Number(b.dataset.edit))),
+        );
+        $$("[data-delete]").forEach(
+          (b) => (b.onclick = () => deleteSupplier(Number(b.dataset.delete))),
+        );
+        $("#categoryList").innerHTML = categories
+          .map(
+            (c) =>
+              `<div class="flex items-center justify-between gap-2 rounded-lg bg-ink/5 px-3 py-2"><span class="text-sm font-semibold">${esc(c)}</span><span class="flex gap-1"><button data-rename="${esc(c)}" class="rounded px-2 py-1 text-xs font-bold hover:bg-white">Edit</button><button data-remove-category="${esc(c)}" class="rounded px-2 py-1 text-xs font-bold text-red-600 hover:bg-red-50">Delete</button></span></div>`,
+          )
+          .join("");
+        $$("[data-rename]").forEach(
+          (b) => (b.onclick = () => renameCategory(b.dataset.rename)),
+        );
+        $$("[data-remove-category]").forEach(
+          (b) => (b.onclick = () => deleteCategory(b.dataset.removeCategory)),
+        );
+      }
+      function openSupplierEditor(id = null) {
+        editingId = id;
+        const form = $("#supplierForm");
+        form.reset();
+        $("#supplierImagePreview").src = "";
+        $("#supplierImagePreview").classList.add("hidden");
+        fillCategorySelect();
+        if (id) {
+          const s = suppliers.find((item) => item.id === id);
+          $("#supplierModalTitle").textContent = "Edit supplier";
+          Object.entries(s).forEach(([key, value]) => {
+            if (form.elements[key]) form.elements[key].value = value;
+          });
+          if (s.imageDataUrl) {
+            $("#supplierImagePreview").src = s.imageDataUrl;
+            $("#supplierImagePreview").classList.remove("hidden");
+          }
+        } else {
+          $("#supplierModalTitle").textContent = "Add supplier";
+          form.elements.category.value = categories[0] || "";
+        }
+        openModal("#supplierModal");
+        setTimeout(() => form.elements.name.focus(), 50);
+      }
+      function deleteSupplier(id) {
+        const supplier = suppliers.find((s) => s.id === id);
+        if (
+          !supplier ||
+          !confirm(`Delete ${supplier.name}? This cannot be undone.`)
+        )
+          return;
+        suppliers = suppliers.filter((s) => s.id !== id);
+        persist();
+        renderAdmin();
+        renderPublic();
+        showToast("Supplier deleted.");
+      }
+      function renameCategory(oldName) {
+        const next = prompt("Rename category:", oldName)?.trim();
+        if (!next || next === oldName) return;
+        if (categories.includes(next)) {
+          showToast("That category already exists.");
+          return;
+        }
+        categories = categories.map((c) => (c === oldName ? next : c));
+        suppliers = suppliers.map((s) =>
+          s.category === oldName ? { ...s, category: next } : s,
+        );
+        if (activeCategory === oldName) activeCategory = next;
+        persist();
+        renderTabs();
+        renderAdmin();
+        renderPublic();
+        showToast("Category renamed.");
+      }
+      function deleteCategory(name) {
+        if (
+          !confirm(
+            `Delete category "${name}"? Suppliers will keep their records but need a new category.`,
+          )
+        )
+          return;
+        categories = categories.filter((c) => c !== name);
+        if (activeCategory === name) activeCategory = "All";
+        persist();
+        renderTabs();
+        renderAdmin();
+        renderPublic();
+        showToast("Category deleted.");
+      }
+      function resetFilters() {
+        $("#searchInput").value = "";
+        activeCategory = "All";
+        renderTabs();
+        renderPublic();
+      }
+      function requestAdmin(action) {
+        pendingAdminAction = action;
+        openModal("#pinModal");
+        setTimeout(() => $("#pinInput").focus(), 50);
+      }
+      function exportData() {
+        const data = {
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          suppliers,
+          categories,
+          pin,
+          hero: heroConfig,
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+            type: "application/json",
+          }),
+          url = URL.createObjectURL(blob),
+          link = document.createElement("a");
+        link.href = url;
+        link.download = "ledger-supplier-backup.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        showToast("Backup exported.");
+      }
+      function resetDemo() {
+        if (
+          !confirm(
+            "Reset suppliers and categories to demo data? Your custom data will be removed.",
+          )
+        )
+          return;
+        suppliers = DEMO_SUPPLIERS.map((s) => ({ ...s }));
+        categories = [...DEMO_CATEGORIES];
+        pin = "1234";
+        heroConfig = { ...HERO_DEFAULTS };
+        persist();
+        activeCategory = "All";
+        renderTabs();
+        renderPublic();
+        renderAdmin();
+        applyHero();
+        showToast("Demo data restored.");
+      }
+      $("#searchInput").oninput = renderPublic;
+      $("#clearBtn").onclick = resetFilters;
+      $("#resetBtn").onclick = resetFilters;
+      $("#addSupplierBtn").onclick = () => openSupplierEditor();
+      $("#adminBtn").onclick = () =>
+        requestAdmin(() => {
+          renderAdmin();
+          openModal("#adminModal");
+        });
+      $("#heroForm").oninput = (e) => {
+        if (!e.target.name) return;
+        heroConfig[e.target.name] = e.target.value;
+        applyHero();
+        persist();
+      };
+      $("#heroForm").onsubmit = (e) => {
+        e.preventDefault();
+        heroConfig = {
+          ...heroConfig,
+          ...Object.fromEntries(new FormData(e.target)),
+        };
+        persist();
+        applyHero();
+        showToast("Hero settings saved.");
+      };
+      $("#resetHeroBtn").onclick = () => {
+        heroConfig = { ...HERO_DEFAULTS };
+        persist();
+        renderHeroForm();
+        applyHero();
+        showToast("Hero settings reset to default.");
+      };
+      $$(".close-modal").forEach(
+        (button) =>
+          (button.onclick = () => closeModal(button.closest('[id$="Modal"]'))),
+      );
+      $$('[id$="Modal"]').forEach(
+        (modal) =>
+          (modal.onclick = (e) => {
+            if (e.target === modal) closeModal(modal);
+          }),
+      );
+      document.onkeydown = (e) => {
+        if (e.key === "Escape")
+          $$('[id$="Modal"]:not(.hidden)').forEach(closeModal);
+      };
+      $("#pinForm").onsubmit = (e) => {
+        e.preventDefault();
+        if ($("#pinInput").value === pin) {
+          const action = pendingAdminAction;
+          pendingAdminAction = null;
+          $("#pinInput").value = "";
+          $("#pinError").classList.add("hidden");
+          closeModal($("#pinModal"));
+          if (action) action();
+        } else {
+          $("#pinError").classList.remove("hidden");
+          $("#pinInput").value = "";
+          $("#pinInput").classList.remove("pin-shake");
+          void $("#pinInput").offsetWidth;
+          $("#pinInput").classList.add("pin-shake");
+          showToast("Incorrect PIN.");
+        }
+      };
+      $("#adminAddBtn").onclick = () => openSupplierEditor();
+      $('#supplierForm [name="imageFile"]').onchange = async (e) => {
+        const file = e.target.files[0];
+        const preview = $("#supplierImagePreview");
+        if (!file) {
+          preview.classList.add("hidden");
+          return;
+        }
+        try {
+          preview.src = (await resizeImage(file)).dataUrl;
+          preview.classList.remove("hidden");
+        } catch {
+          preview.classList.add("hidden");
+          showToast("That image could not be read.");
+        }
+      };
+      $("#supplierForm").onsubmit = async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const imageFile = form.elements.imageFile.files[0];
+        const image = imageFile ? await resizeImage(imageFile) : null;
+        const data = Object.fromEntries(new FormData(form));
+        delete data.id;
+        delete data.imageFile;
+        if (image) data.imageDataUrl = image.dataUrl;
+        const supplierId = editingId || Date.now();
+        if (editingId) {
+          suppliers = suppliers.map((s) =>
+            s.id === editingId ? { ...s, ...data, id: supplierId } : s,
+          );
+          showToast("Supplier updated successfully.");
+        } else {
+          suppliers.unshift({ ...data, id: supplierId });
+          showToast("Supplier added successfully.");
+        }
+        persist();
+        if (image) {
+          try {
+            const message = await saveImageToAppsFolder(
+              image.blob,
+              data.name,
+              supplierId,
+            );
+            showToast(message);
+          } catch {
+            showToast(
+              "Supplier saved, but the image was not written to the apps folder.",
+            );
+          }
+        }
+        form.reset();
+        $("#supplierImagePreview").src = "";
+        $("#supplierImagePreview").classList.add("hidden");
+        closeModal($("#supplierModal"));
+        renderAdmin();
+        renderPublic();
+      };
+      $("#categoryForm").onsubmit = (e) => {
+        e.preventDefault();
+        const value = $("#categoryInput").value.trim();
+        if (!value) return;
+        if (categories.some((c) => c.toLowerCase() === value.toLowerCase())) {
+          showToast("That category already exists.");
+          return;
+        }
+        categories.push(value);
+        persist();
+        $("#categoryInput").value = "";
+        renderTabs();
+        renderAdmin();
+        showToast("Category added.");
+      };
+      $("#changePinForm").onsubmit = (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.target));
+        if (data.currentPin !== pin) {
+          showToast("Current PIN is incorrect.");
+          return;
+        }
+        if (!/^\d{4}$/.test(data.newPin)) {
+          showToast("PIN must be exactly 4 digits.");
+          return;
+        }
+        pin = data.newPin;
+        persist();
+        e.target.reset();
+        showToast("PIN updated successfully.");
+      };
+      $("#exportBtn").onclick = exportData;
+      $("#resetDemoBtn").onclick = resetDemo;
+      $("#importBtn").onclick = () => $("#importFile").click();
+      $("#importFile").onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          const data = JSON.parse(await file.text());
+          if (!Array.isArray(data.suppliers) || !Array.isArray(data.categories))
+            throw new Error();
+          suppliers = data.suppliers;
+          categories = data.categories;
+          pin = /^\d{4}$/.test(data.pin || "") ? data.pin : pin;
+          heroConfig =
+            data.hero && typeof data.hero === "object"
+              ? { ...HERO_DEFAULTS, ...data.hero }
+              : { ...HERO_DEFAULTS };
+          persist();
+          activeCategory = "All";
+          renderTabs();
+          renderPublic();
+          renderAdmin();
+          applyHero();
+          showToast("Backup imported successfully.");
+        } catch {
+          showToast("Import failed: invalid backup file.");
+        }
+        e.target.value = "";
+      };
+      applyHero();
+      renderTabs();
+      renderPublic();
+    </script>
+  </body>
+</html>

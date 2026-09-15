@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title>Ledger</title>
+  <rect width="512" height="512" rx="106" fill="#090d16"/>
+  <path d="M128 128h256v64H192v64h149v64H192v64h192v64H128z" fill="#f2b84b"/>
+</svg>
